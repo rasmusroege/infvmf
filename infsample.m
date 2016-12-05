@@ -6,7 +6,6 @@ function [z,llh,noc,cputime,strout,amis,best_sample]=infsample(X,model,opts)
 if nargin<3
     opts=struct;
 end
-global limit_sm;
 % if isfield(opts,'covType'); par.covType=opts.covType; else par.covType='diag'; end;
 if isfield(opts,'Kinit'); Kinit=opts.Kinit; else Kinit=ceil(log(N)); end
 if isfield(model.par,'z'); z=model.par.z; else z=ceil(Kinit*rand(N,1)); end
@@ -15,7 +14,6 @@ if isfield(opts,'storeExpectations'); storeExpectations=opts.storeExpectations; 
 if isfield(opts,'debug'); debug=opts.debug; else debug=false; end
 if isfield(opts,'UseSequentialAllocation'); UseSequentialAllocation=opts.UseSequentialAllocation; else par.UseSequentialAllocation=true; end
 if isfield(opts,'startiter'); startiter=opts.startiter; else, startiter=1;end;
-if isfield(opts,'limit_sm'); limit_sm=opts.limit_sm; else limit_sm=inf;end
 if isfield(opts,'llh'); llh=opts.llh; else, llh=[];end;
 if isfield(opts,'noc'); noc=opts.noc; else, noc=[];end;
 if isfield(opts,'cputime'); cputime=opts.cputime; else, cputime=[];end;
@@ -58,7 +56,6 @@ for iter=startiter:startiter+maxiter-1
     if iter>=startiter+maxiter-1-optim
         gibbs_sample(X,model,randperm(N),debug,[],[],optim);
     else
-%         gibbs_sample(X,model,randperm(N),debug);
         gibbs_sample(X,model,randperm(N),debug);
     end
     if isa(model,'AbsFiniteModel')
@@ -67,9 +64,7 @@ for iter=startiter:startiter+maxiter-1
         end
     else
         for k=1:max(max(model.par.z),5)
-            if max(model.par.z)<limit_sm            
-                split_merge_sample(X,model,debug);
-            end
+            split_merge_sample(X,model,debug);
         end
     end
     model.calcss(X);
@@ -93,16 +88,9 @@ for iter=startiter:startiter+maxiter-1
         modelstr=class(model);
         amis=[amis;calcami(model.par.z,zt)];
         strout{iter}=sprintf(' %12.0f | %12.4e | %12.4e | %12.0f | %12.3f | %s\n',iter,llh(end), dllh, getnoc(model),amis(end),datestr(now));
-%         if max(model.par.z)==1
-%             disp('reer');
-%         end
     end
     if verbose
         fprintf('%s',strout{end});
-    end
-%     figure(1); plot(llh(2:end)); ylabel('Joint distribution'); xlabel('Iteration');  title(['number of components ' num2str(noc(end))]); drawnow;
-    if (~isa(model,'gmmgp_model') && ~isa(model,'gmmgp_homos2_homow2')) && max(model.par.z)>=limit_sm
-        return;
     end
 end
 

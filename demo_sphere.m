@@ -3,9 +3,7 @@ addpath models/;
 addpath utils/;
 
 % generate data
-
-rng(5);
-
+rng(1);
 N=600;
 K=6;
 T=3;
@@ -16,15 +14,14 @@ mu0=[0 0 1];
 z=kron(1:K,ones(1,N/K))';
 muk={zeros(T,K)};
 x={zeros(T,N)};
+muk{1}=vmfrand(T,K,tau0,mu0);
 for k=1:K
-	muk{1}=vmfrand(T,K,tau0,mu0);
 	x{1}(:,z==k)=vmfrand(T,N/K,tauk(k),muk{1}(:,k));
 end
 
 % run inference
 o=struct();
 o.maxiter=10;
-o.zt=z;
 m=vmfmodel(x,randi(K,N,1),K);
 infsample(x,m,o);
 
@@ -34,6 +31,7 @@ figure;hold on;
 surface(xx,yy,zz,'facecolor','w','facealpha',0.5,'EdgeColor',0.85*[1 1 1],'linewidth',2);
 hold on;
 axis equal; axis off;
+
 % plot data
 mcolors=jet(max(max(m.par.z),K));
 for k=1:K
